@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zahlen-Sequenz Neglect Therapie</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f8f9fa;
+            overflow: hidden;
+            user-select: none;
+        }
+        
+        .container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .header {
+            background-color: #2c3e50;
+            color: white;
+            padding: 15px 20px;
+            text-align: center;
+            font-size: 20px;
+            font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .config-panel {
+            background-color: white;
+            padding: 20px;
+            border-bottom: 2px solid #e9ecef;
+            text-align: center;
+        }
+        
+        .config-row {
+            display: inline-flex;
+            align-items: center;
+            margin: 0 20px;
+            gap: 10px;
+        }
+        
+        .config-label {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .config-input {
+            padding: 8px 12px;
+            border: 2px solid #dee2e6;
+            border-radius: 6px;
+            font-size: 16px;
+            width: 80px;
+            text-align: center;
+        }
+        
+        .start-btn {
+            background-color: #27ae60;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-left: 20px;
+            transition: background-color 0.3s;
+        }
+        
+        .start-btn:hover {
+            background-color: #219a52;
+        }
+        
+        .status-bar {
+            background-color: #ecf0f1;
+            padding: 15px 20px;
+            border-bottom: 1px solid #bdc3c7;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        
+        .status-left {
+            color: #2c3e50;
+        }
+        
+        .status-right {
+            color: #7f8c8d;
+        }
+        
+        .exercise-area {
+            flex: 1;
+            position: relative;
+            background-color: white;
+            overflow: hidden;
+        }
+        
+        .optokinetic-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 5;
+            overflow: hidden;
+        }
+        
+        .optokinetic-dot {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background-color: rgba(128, 128, 128, 0.6);
+            border-radius: 50%;
+            animation: moveLeftward 8s linear infinite;
+        }
+        
+        @keyframes moveLeftward {
+            from {
+                transform: translateX(100vw);
+            }
+            to {
+                transform: translateX(-20px);
+            }
+        }
+        
+        .number-target {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background-color: #3498db;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 3px solid #2980b9;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            z-index: 10;
+        }
+        
+        .number-target:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+        }
+        
+        .number-target.completed {
+            background-color: #27ae60;
+            border-color: #219a52;
+            transform: scale(0.9);
+            opacity: 0.7;
+            cursor: default;
+            animation: success-pulse 0.5s ease;
+        }
+        
+        .number-target.error {
+            background-color: #e74c3c;
+            border-color: #c0392b;
+            animation: error-shake 0.5s ease;
+        }
+        
+        @keyframes success-pulse {
+            0% { transform: scale(0.9); }
+            50% { transform: scale(1.2); background-color: #2ecc71; }
+            100% { transform: scale(0.9); }
+        }
+        
+        @keyframes error-shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+        
+        .results-panel {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            text-align: center;
+            z-index: 1000;
+            min-width: 400px;
+        }
+        
+        .results-title {
+            font-size: 28px;
+            color: #27ae60;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+        
+        .results-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 30px 0;
+        }
+        
+        .stat-item {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #3498db;
+        }
+        
+        .stat-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .stat-label {
+            font-size: 14px;
+            color: #7f8c8d;
+            margin-top: 5px;
+        }
+        
+        .results-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 30px;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .btn-primary {
+            background-color: #3498db;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: #2980b9;
+        }
+        
+        .btn-secondary {
+            background-color: #95a5a6;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #7f8c8d;
+        }
+        
+        .timer {
+            font-family: 'Courier New', monospace;
+            font-size: 20px;
+            color: #2c3e50;
+        }
+        
+        /* Tablet optimizations */
+        @media (max-width: 768px) {
+            .config-row {
+                margin: 10px 0;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .config-panel {
+                padding: 15px;
+            }
+            
+            .number-target {
+                width: 70px;
+                height: 70px;
+                font-size: 28px;
+            }
+            
+            .status-bar {
+                flex-direction: column;
+                gap: 10px;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            Zahlen-Sequenz Neglect Therapie
+        </div>
+        
+        <div class="config-panel" id="configPanel">
+            <div class="config-row">
+                <span class="config-label">Anzahl Zahlen:</span>
+                <input type="number" class="config-input" id="numberCount" value="15" min="5" max="25">
+            </div>
+            <div class="config-row">
+                <span class="config-label">Schwierigkeit:</span>
+                <select class="config-input" id="difficulty">
+                    <option value="easy">Einfach</option>
+                    <option value="medium" selected>Mittel</option>
+                    <option value="hard">Schwer</option>
+                </select>
+            </div>
+            <div class="config-row">
+                <span class="config-label">Optokinetische Stimulation:</span>
+                <select class="config-input" id="optokinetic">
+                    <option value="off" selected>Aus</option>
+                    <option value="on">Ein</option>
+                </select>
+            </div>
+            <button class="start-btn" onclick="startExercise()">Übung starten</button>
+        </div>
+        
+        <div class="status-bar" id="statusBar" style="display: none;">
+            <div class="status-left">
+                <span>Nächste Zahl: </span>
+                <span id="nextNumber">1</span>
+                <span> | Fehler: </span>
+                <span id="errorCount">0</span>
+            </div>
+            <div class="status-right">
+                <span class="timer" id="timer">00:00</span>
+            </div>
+        </div>
+        
+        <div class="exercise-area" id="exerciseArea">
+            <!-- Numbers will be placed here -->
+        </div>
+        
+        <div class="results-panel" id="resultsPanel">
+            <div class="results-title">Übung abgeschlossen!</div>
+            <div class="results-stats">
+                <div class="stat-item">
+                    <div class="stat-value" id="finalTime">--:--</div>
+                    <div class="stat-label">Gesamtzeit</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="finalErrors">0</div>
+                    <div class="stat-label">Fehler</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="averageTime">0.0s</div>
+                    <div class="stat-label">⌀ Zeit pro Zahl</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="accuracy">100%</div>
+                    <div class="stat-label">Genauigkeit</div>
+                </div>
+            </div>
+            <div class="results-buttons">
+                <button class="btn btn-primary" onclick="startExercise()">Neue Übung</button>
+                <button class="btn btn-secondary" onclick="showConfig()">Einstellungen</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class NumberSequenceTherapy {
+            constructor() {
+                this.numbers = [];
+                this.currentTarget = 1;
+                this.totalNumbers = 15;
+                this.errors = 0;
+                this.startTime = null;
+                this.endTime = null;
+                this.clickTimes = [];
+                this.exerciseActive = false;
+                this.timerInterval = null;
+            }
+            
+            startExercise() {
+                this.reset();
+                this.setupExercise();
+                this.hideConfig();
+                this.showStatusBar();
+                this.generateNumbers();
+                this.startTimer();
+                this.exerciseActive = true;
+            }
+            
+            reset() {
+                this.currentTarget = 1;
+                this.errors = 0;
+                this.startTime = null;
+                this.endTime = null;
+                this.clickTimes = [];
+                this.exerciseActive = false;
+                this.clearTimer();
+                this.removeOptokinetic();
+                document.getElementById('exerciseArea').innerHTML = '';
+                document.getElementById('resultsPanel').style.display = 'none';
+            }
+            
+            setupExercise() {
+                this.totalNumbers = parseInt(document.getElementById('numberCount').value);
+                const difficulty = document.getElementById('difficulty').value;
+                this.optokinetic = document.getElementById('optokinetic').value === 'on';
+                
+                // Adjust spacing based on difficulty
+                this.spacing = {
+                    easy: 100,     // More space between numbers
+                    medium: 80,    // Standard spacing
+                    hard: 60       // Closer together, more challenging
+                }[difficulty];
+            }
+            
+            hideConfig() {
+                document.getElementById('configPanel').style.display = 'none';
+            }
+            
+            showConfig() {
+                document.getElementById('configPanel').style.display = 'block';
+                document.getElementById('statusBar').style.display = 'none';
+                document.getElementById('resultsPanel').style.display = 'none';
+                this.reset();
+            }
+            
+            showStatusBar() {
+                document.getElementById('statusBar').style.display = 'flex';
+                this.updateStatus();
+            }
+            
+            generateNumbers() {
+                const exerciseArea = document.getElementById('exerciseArea');
+                const rect = exerciseArea.getBoundingClientRect();
+                
+                // Add optokinetic stimulation if enabled
+                if (this.optokinetic) {
+                    this.createOptokinetic();
+                }
+                
+                // Calculate usable area (accounting for number size)
+                const margin = 60; // Space from edges
+                const numberSize = 60; // Size of number circles
+                const usableWidth = rect.width - (2 * margin) - numberSize;
+                const usableHeight = rect.height - (2 * margin) - numberSize;
+                
+                const positions = this.generatePositions(usableWidth, usableHeight, margin);
+                
+                for (let i = 1; i <= this.totalNumbers; i++) {
+                    this.createNumberElement(i, positions[i - 1]);
+                }
+            }
+            
+            generatePositions(width, height, margin) {
+                const positions = [];
+                const minDistance = this.spacing;
+                
+                for (let i = 0; i < this.totalNumbers; i++) {
+                    let position;
+                    let attempts = 0;
+                    
+                    do {
+                        position = {
+                            x: margin + Math.random() * width,
+                            y: margin + Math.random() * height
+                        };
+                        attempts++;
+                    } while (attempts < 100 && this.tooCloseToOthers(position, positions, minDistance));
+                    
+                    positions.push(position);
+                }
+                
+                return positions;
+            }
+            
+            tooCloseToOthers(position, existingPositions, minDistance) {
+                return existingPositions.some(existing => {
+                    const dx = position.x - existing.x;
+                    const dy = position.y - existing.y;
+                    return Math.sqrt(dx * dx + dy * dy) < minDistance;
+                });
+            }
+            
+            createNumberElement(number, position) {
+                const numberEl = document.createElement('div');
+                numberEl.className = 'number-target';
+                numberEl.textContent = number;
+                numberEl.style.left = `${position.x}px`;
+                numberEl.style.top = `${position.y}px`;
+                numberEl.dataset.number = number;
+                
+                numberEl.addEventListener('click', () => this.handleNumberClick(number, numberEl));
+                
+                document.getElementById('exerciseArea').appendChild(numberEl);
+            }
+            
+            handleNumberClick(number, element) {
+                if (!this.exerciseActive) return;
+                
+                if (!this.startTime) {
+                    this.startTime = Date.now();
+                }
+                
+                if (number === this.currentTarget) {
+                    // Correct click
+                    this.clickTimes.push(Date.now());
+                    element.classList.add('completed');
+                    this.currentTarget++;
+                    
+                    if (this.currentTarget > this.totalNumbers) {
+                        this.completeExercise();
+                    } else {
+                        this.updateStatus();
+                    }
+                } else {
+                    // Wrong click
+                    this.errors++;
+                    element.classList.add('error');
+                    setTimeout(() => {
+                        element.classList.remove('error');
+                    }, 500);
+                    this.updateStatus();
+                }
+            }
+            
+            updateStatus() {
+                document.getElementById('nextNumber').textContent = this.currentTarget;
+                document.getElementById('errorCount').textContent = this.errors;
+            }
+            
+            startTimer() {
+                this.timerInterval = setInterval(() => {
+                    if (this.startTime) {
+                        const elapsed = Date.now() - this.startTime;
+                        const minutes = Math.floor(elapsed / 60000);
+                        const seconds = Math.floor((elapsed % 60000) / 1000);
+                        document.getElementById('timer').textContent = 
+                            `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                    }
+                }, 100);
+            }
+            
+            clearTimer() {
+                if (this.timerInterval) {
+                    clearInterval(this.timerInterval);
+                    this.timerInterval = null;
+                }
+            }
+            
+            completeExercise() {
+                this.exerciseActive = false;
+                this.endTime = Date.now();
+                this.clearTimer();
+                this.removeOptokinetic();
+                this.showResults();
+            }
+            
+            createOptokinetic() {
+                const overlay = document.createElement('div');
+                overlay.className = 'optokinetic-overlay';
+                overlay.id = 'optokinetic-overlay';
+                
+                // Create dots continuously
+                this.optoInterval = setInterval(() => {
+                    if (!this.exerciseActive) return;
+                    
+                    const dot = document.createElement('div');
+                    dot.className = 'optokinetic-dot';
+                    
+                    // Random vertical position
+                    const rect = document.getElementById('exerciseArea').getBoundingClientRect();
+                    dot.style.top = Math.random() * (rect.height - 20) + 'px';
+                    
+                    overlay.appendChild(dot);
+                    
+                    // Remove dot after animation completes
+                    setTimeout(() => {
+                        if (dot.parentNode) {
+                            dot.remove();
+                        }
+                    }, 8500);
+                }, 300); // New dot every 300ms
+                
+                document.getElementById('exerciseArea').appendChild(overlay);
+            }
+            
+            removeOptokinetic() {
+                if (this.optoInterval) {
+                    clearInterval(this.optoInterval);
+                    this.optoInterval = null;
+                }
+                
+                const overlay = document.getElementById('optokinetic-overlay');
+                if (overlay) {
+                    overlay.remove();
+                }
+            }
+            
+            showResults() {
+                const totalTime = this.endTime - this.startTime;
+                const averageTime = totalTime / this.totalNumbers;
+                const accuracy = Math.round(((this.totalNumbers) / (this.totalNumbers + this.errors)) * 100);
+                
+                const minutes = Math.floor(totalTime / 60000);
+                const seconds = Math.floor((totalTime % 60000) / 1000);
+                
+                document.getElementById('finalTime').textContent = 
+                    `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                document.getElementById('finalErrors').textContent = this.errors;
+                document.getElementById('averageTime').textContent = `${(averageTime / 1000).toFixed(1)}s`;
+                document.getElementById('accuracy').textContent = `${accuracy}%`;
+                
+                document.getElementById('resultsPanel').style.display = 'block';
+            }
+        }
+        
+        // Global functions
+        const therapy = new NumberSequenceTherapy();
+        
+        function startExercise() {
+            therapy.startExercise();
+        }
+        
+        function showConfig() {
+            therapy.showConfig();
+        }
+        
+        // Initialize on load
+        window.addEventListener('load', () => {
+            // Ready to start
+        });
+    </script>
+</body>
+</html>
